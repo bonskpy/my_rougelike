@@ -1,8 +1,14 @@
 # This file contains logic responsible for procedural map generation.
 
-from typing import Tuple
+from __future__ import annotations
+from typing import Tuple, Iterator, List, TYPE_CHECKING
 from game_map import GameMap
 import tile_types
+import random
+import tcod
+
+if TYPE_CHECKING:
+    from entity import Entity
 
 
 class RectangularRoom:
@@ -14,33 +20,75 @@ class RectangularRoom:
 
     @property
     def center(self) -> Tuple[int, int]:
+        """Get the central tile coordinates."""
         center_x = int((self.x1 + self.x2) / 2)
         center_y = int((self.y1 + self.y2) / 2)
         return center_x, center_y
 
     @property
     def inner(self) -> Tuple[slice, slice]:
+        """Get all the inner tiles of the room."""
         return slice(self.x1 + 1, self.x2), slice(self.y1 + 1, self.y2)
 
+    def intersect(self, other: RectangularRoom) -> bool:
+        """Check if room intersects with given other room."""
+        return (
+            self.x1 <= other.x2
+            and self.x2 >= other.x1
+            and self.y1 <= other.y2
+            and self.y2 >= other.y1
+        )
 
-def generate_dungeon(dungeon_width, dungeon_height) -> GameMap:
+
+def tunnel_between(
+    start: Tuple[int, int], end: Tuple[int, int]
+) -> Iterator[Tuple[int, int]]:
+    x1, y1 = start
+    x2, y2 = end
+
+    if random.random() < 0.5:
+        corner_x, corner_y = x2, y1
+    else:
+        corner_x, corner_y = x1, y2
+
+    for x, y in tcod.los.bresenham((x1, y1), (corner_x, corner_y)).tolist():
+        yield x, y
+    for x, y in tcod.los.bresenham((corner_x, corner_y), (x2, y2)).tolist():
+        yield x, y
+
+
+def generate_dungeon(
+    max_rooms: int,
+    max_room_size: int,
+    min_room_size: int,
+    dungeon_width: int,
+    dungeon_height: int,
+    player: Entity,
+) -> GameMap:
     dungeon = GameMap(width=dungeon_width, height=dungeon_height)
 
-    room1 = RectangularRoom(
-        x=20,
-        y=15,
-        width=10,
-        height=15,
-    )
+    rooms: List[RectangularRoom] = []
 
-    room2 = RectangularRoom(
-        x=35,
-        y=15,
-        width=10,
-        height=15,
-    )
+    for room in range(max_rooms):
+        room_width = random.randint(min_room_size, max_room_size)
+        room_height = random.randint(min_room_size, max_room_size)
 
-    dungeon.tiles[room1.inner] = tile_types.floor
-    dungeon.tiles[room2.inner] = tile_types.floor
+        x = random.randint(0, dungeon.width - room_width - 1)
+        y = random.randint(0, dungeon.height - room_height - 1)
+
+        new_room = RectangularRoom(x, y, room_width, room_height)
+
+        if any(new_room.intersect(other) for other in rooms):
+            continue
+
+        dungeon.tiles[new_room.inner] = tile_types.floor
+
+        if len(rooms) == 0:
+            player.x, player.y = new_room.center
+        else:
+            for x, y in tunnel_between(rooms[-1].center, new_room.center):
+                dungeon.tiles[x, y] = tile_types.floor
+
+        rooms.append(new_room)
 
     return dungeon

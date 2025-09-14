@@ -9,6 +9,10 @@ def main() -> None:
     screen_width = 80
     screen_height = 50
 
+    room_max_size = 16
+    room_min_size = 6
+    room_max_count = 30
+
     map_width = 80
     map_height = 45
 
@@ -24,7 +28,14 @@ def main() -> None:
     )
     entities = {npc, player}
 
-    game_map = generate_dungeon(map_width, map_height)
+    game_map = generate_dungeon(
+        max_rooms=room_max_count,
+        max_room_size=room_max_size,
+        min_room_size=room_min_size,
+        dungeon_width=map_width,
+        dungeon_height=map_height,
+        player=player,
+    )
 
     engine = Engine(
         entities=entities, event_handler=event_handler, player=player, game_map=game_map

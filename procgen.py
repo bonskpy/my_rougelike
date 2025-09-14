@@ -1,6 +1,8 @@
 # This file contains logic responsible for procedural map generation.
 
 from typing import Tuple
+from game_map import GameMap
+import tile_types
 
 
 class RectangularRoom:
@@ -19,3 +21,26 @@ class RectangularRoom:
     @property
     def inner(self) -> Tuple[slice, slice]:
         return slice(self.x1 + 1, self.x2), slice(self.y1 + 1, self.y2)
+
+
+def generate_dungeon(dungeon_width, dungeon_height) -> GameMap:
+    dungeon = GameMap(width=dungeon_width, height=dungeon_height)
+
+    room1 = RectangularRoom(
+        x=20,
+        y=15,
+        width=10,
+        height=15,
+    )
+
+    room2 = RectangularRoom(
+        x=35,
+        y=15,
+        width=10,
+        height=15,
+    )
+
+    dungeon.tiles[room1.inner] = tile_types.floor
+    dungeon.tiles[room2.inner] = tile_types.floor
+
+    return dungeon

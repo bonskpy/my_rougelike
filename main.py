@@ -16,6 +16,8 @@ def main() -> None:
     map_width = 80
     map_height = 45
 
+    max_monsters_per_room = 2
+
     tileset = tcod.tileset.load_tilesheet(
         "content/dejavu10x10_gs_tc.png", 32, 8, tcod.tileset.CHARMAP_TCOD
     )
@@ -23,10 +25,6 @@ def main() -> None:
     event_handler = EventHandler()
 
     player = Entity(int(screen_width / 2), int(screen_height / 2), "@", (255, 209, 141))
-    npc = Entity(
-        int(screen_width / 2 - 5), int(screen_height / 2 - 5), "@", (255, 255, 0)
-    )
-    entities = {npc, player}
 
     game_map = generate_dungeon(
         max_rooms=room_max_count,
@@ -34,12 +32,11 @@ def main() -> None:
         min_room_size=room_min_size,
         dungeon_width=map_width,
         dungeon_height=map_height,
+        max_monsters_per_room=max_monsters_per_room,
         player=player,
     )
 
-    engine = Engine(
-        entities=entities, event_handler=event_handler, player=player, game_map=game_map
-    )
+    engine = Engine(event_handler=event_handler, player=player, game_map=game_map)
 
     with tcod.context.new_terminal(
         screen_width,
